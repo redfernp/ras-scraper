@@ -149,23 +149,7 @@ if run_btn:
                             "--disable-dev-shm-usage",
                         ],
                     )
-                    context = browser.new_context(
-                        viewport={"width": 1280, "height": 900},
-                        user_agent=(
-                            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                            "AppleWebKit/537.36 (KHTML, like Gecko) "
-                            "Chrome/122.0.0.0 Safari/537.36"
-                        ),
-                        extra_http_headers={
-                            "Sec-CH-UA":          '"Chromium";v="122", "Not(A:Brand";v="24", "Google Chrome";v="122"',
-                            "Sec-CH-UA-Mobile":   "?0",
-                            "Sec-CH-UA-Platform": '"Windows"',
-                        },
-                    )
-                    page = context.new_page()
-                    page.add_init_script(
-                        "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"
-                    )
+                    context = scraper.make_context(browser)
 
                     for url in urls:
                         track_preview = scraper.extract_track_name(url)
@@ -174,7 +158,7 @@ if run_btn:
                         try:
                             track, results, nap, nb = scraper.scrape_meeting_with_page(
                                 url,
-                                page,
+                                context,
                                 log_fn=lambda msg: st.write(f"&nbsp;&nbsp;&nbsp;{msg}"),
                             )
                             all_results[track] = (results, nap, nb)

@@ -143,7 +143,7 @@ def is_challenge_page(page) -> bool:
     return False
 
 
-def wait_for_page(page, timeout: int = 90) -> bool:
+def wait_for_page(page, timeout: int = 45) -> bool:
     deadline = time.time() + timeout
     while time.time() < deadline:
         if not is_challenge_page(page):
@@ -152,75 +152,119 @@ def wait_for_page(page, timeout: int = 90) -> bool:
     return False
 
 
+def create_page(context):
+    """Create a new page with stealth patches applied."""
+    from playwright_stealth import Stealth
+    page = context.new_page()
+    page.add_init_script(
+        "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"
+    )
+    try:
+        Stealth().apply_stealth_sync(page)
+    except Exception:
+        pass
+    return page
+
+
+def safe_goto(page, url: str, context=None) -> tuple:
+    """
+    Navigate to a URL, handling page crashes by creating a fresh page.
+    Returns (page, success).
+    """
+    try:
+        page.goto(url, wait_until="domcontentloaded", timeout=60_000)
+        return page, True
+    except PlaywrightTimeoutError:
+        return page, True  # partial load is fine
+    except Exception as e:
+        if "crashed" in str(e).lower() and context:
+            try:
+                page.close()
+            except Exception:
+                pass
+            page = create_page(context)
+            try:
+                page.goto(url, wait_until="domcontentloaded", timeout=60_000)
+                return page, True
+            except PlaywrightTimeoutError:
+                return page, True
+            except Exception:
+                return page, False
+        return page, False
+
+
 # ---------------------------------------------------------------------------
-# Core scrape function — accepts an existing Playwright page
+# Core scrape function — accepts a Playwright browser context
 # ---------------------------------------------------------------------------
 
 def scrape_meeting_with_page(
     meeting_url: str,
-    page,
+    context,
     log_fn=None,
 ) -> tuple[str, list[tuple], int | None, int | None]:
     """
-    Scrape a full meeting using an existing Playwright page object.
-    Returns (track_name, results, nap_race, nb_race)
-    where results = [(race_num, selected_horse_or_None, gap), ...]
+    Scrape a full meeting using a Playwright browser context.
+    Creates its own page (with stealth) and closes it when done.
+    Returns (track_name, results, nap_race, nb_race).
     """
     def log(msg):
         if log_fn:
             log_fn(msg)
 
     track = extract_track_name(meeting_url)
+    page = create_page(context)
 
     try:
-        page.goto(meeting_url, wait_until="domcontentloaded", timeout=60_000)
-    except PlaywrightTimeoutError:
-        pass
+        page, ok = safe_goto(page, meeting_url, context)
+        if not ok:
+            log("ERROR: Could not load overview page.")
+            return track, [], None, None
 
-    if not wait_for_page(page, timeout=90):
-        log("ERROR: Cloudflare challenge did not clear.")
-        return track, [], None, None
-
-    try:
-        page.wait_for_load_state("networkidle", timeout=15_000)
-    except PlaywrightTimeoutError:
-        pass
-
-    race_count = detect_race_count(page.content(), meeting_url)
-    if race_count == 0:
-        log("ERROR: Could not detect races on overview page.")
-        return track, [], None, None
-
-    log(f"Found {race_count} races")
-    results = []
-
-    for r in range(1, race_count + 1):
-        race_url = f"{meeting_url.rstrip('/')}/R{r}"
-        try:
-            page.goto(race_url, wait_until="domcontentloaded", timeout=60_000)
-        except PlaywrightTimeoutError:
-            pass
-
-        if not wait_for_page(page, timeout=30):
-            log(f"R{r}: challenge stuck — skipped")
-            results.append((r, None, 0))
-            continue
+        if not wait_for_page(page, timeout=45):
+            log("ERROR: Cloudflare challenge did not clear.")
+            return track, [], None, None
 
         try:
             page.wait_for_load_state("networkidle", timeout=15_000)
         except PlaywrightTimeoutError:
             pass
 
-        tips = parse_tips(page.content())
-        if not tips:
-            log(f"R{r}: no tips found")
-            results.append((r, None, 0))
-            continue
+        race_count = detect_race_count(page.content(), meeting_url)
+        if race_count == 0:
+            log("ERROR: Could not detect races on overview page.")
+            return track, [], None, None
 
-        selected, gap = select_horse(tips)
-        rule = "rank 1" if gap >= 4 else "rank 2"
-        log(f"R{r}: {selected['name']} ({rule}, gap={gap})")
-        results.append((r, selected, gap))
+        log(f"Found {race_count} races")
+        results = []
+
+        for r in range(1, race_count + 1):
+            race_url = f"{meeting_url.rstrip('/')}/R{r}"
+            page, ok = safe_goto(page, race_url, context)
+            if not ok:
+                log(f"R{r}: page crashed — skipped")
+                results.append((r, None, 0))
+                continue
+
+            if not wait_for_page(page, timeout=30):
+                log(f"R{r}: challenge stuck — skipped")
+                results.append((r, None, 0))
+                continue
+
+            try:
+                page.wait_for_load_state("networkidle", timeout=15_000)
+            except PlaywrightTimeoutError:
+                pass
+
+            tips = parse_tips(page.content())
+            if not tips:
+                log(f"R{r}: no tips found")
+                results.append((r, None, 0))
+                continue
+
+            selected, gap = select_horse(tips)
+            rule = "rank 1" if gap >= 4 else "rank 2"
+            log(f"R{r}: {selected['name']} ({rule}, gap={gap})")
+            results.append((r, selected, gap))
 
     nap, nb = assign_nap_nb(results)
     return track, results, nap, nb
@@ -230,32 +274,32 @@ def scrape_meeting_with_page(
 # Standalone browser session — used by CLI
 # ---------------------------------------------------------------------------
 
+def make_context(browser, headless: bool = False):
+    return browser.new_context(
+        viewport={"width": 1280, "height": 900},
+        user_agent=(
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/122.0.0.0 Safari/537.36"
+        ),
+        extra_http_headers={
+            "Sec-CH-UA":          '"Chromium";v="122", "Not(A:Brand";v="24", "Google Chrome";v="122"',
+            "Sec-CH-UA-Mobile":   "?0",
+            "Sec-CH-UA-Platform": '"Windows"',
+        },
+    )
+
+
 def scrape_meeting(meeting_url: str) -> None:
     print(f"\nLoading: {meeting_url}")
     print("Browser opening — solve Cloudflare challenge if prompted.\n")
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=False, args=["--start-maximized"])
-        context = browser.new_context(
-            viewport=None,
-            user_agent=(
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                "AppleWebKit/537.36 (KHTML, like Gecko) "
-                "Chrome/122.0.0.0 Safari/537.36"
-            ),
-            extra_http_headers={
-                "Sec-CH-UA":          '"Chromium";v="122", "Not(A:Brand";v="24", "Google Chrome";v="122"',
-                "Sec-CH-UA-Mobile":   "?0",
-                "Sec-CH-UA-Platform": '"Windows"',
-            },
-        )
-        page = context.new_page()
-        page.add_init_script(
-            "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"
-        )
+        context = make_context(browser)
 
         track, results, nap, nb = scrape_meeting_with_page(
-            meeting_url, page, log_fn=lambda m: print(f"  {m}")
+            meeting_url, context, log_fn=lambda m: print(f"  {m}")
         )
         browser.close()
 
