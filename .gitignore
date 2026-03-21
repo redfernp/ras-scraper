@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.env
+venv/
+.venv/
+
+# Playwright
+debug_page.html
+cf_blocked.html
+cf_challenge.html
+page_loaded.png
+cf_blocked.png
+
+# Streamlit
+.streamlit/secrets.toml
+
+# OS
+.DS_Store
+Thumbs.db
