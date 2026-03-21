@@ -60,7 +60,7 @@ def parse_tips(html: str) -> list[dict]:
 # Selection logic
 # ---------------------------------------------------------------------------
 
-def select_horse(tips: list[dict]) -> tuple[dict | None, int]:
+def select_horse(tips: list) -> tuple:
     """
     gap >= 4  →  select rank 1
     gap <  4  →  select rank 2
@@ -78,7 +78,7 @@ def select_horse(tips: list[dict]) -> tuple[dict | None, int]:
     return (rank1 if gap >= 4 else rank2), gap
 
 
-def assign_nap_nb(results: list[tuple]) -> tuple[int | None, int | None]:
+def assign_nap_nb(results: list) -> tuple:
     """
     Given results = [(race_num, selected_horse_or_None, gap), ...],
     return (nap_race_num, nb_race_num) based on largest gaps.
@@ -201,7 +201,7 @@ def scrape_meeting_with_page(
     meeting_url: str,
     context,
     log_fn=None,
-) -> tuple[str, list[tuple], int | None, int | None]:
+) -> tuple:
     """
     Scrape a full meeting using a Playwright browser context.
     Creates its own page (with stealth) and closes it when done.
