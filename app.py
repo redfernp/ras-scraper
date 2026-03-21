@@ -113,37 +113,16 @@ with col_input:
         label_visibility="collapsed",
     )
 
-    cf_cookie = st.text_input(
-        "cf_clearance cookie",
-        placeholder="Paste your cf_clearance cookie value here",
-        type="password",
-        help=(
-            "Visit racingandsports.com.au in Chrome, pass the Cloudflare check, "
-            "then press F12 → Application → Cookies → www.racingandsports.com.au "
-            "→ copy the Value of cf_clearance."
-        ),
-    )
-
 with col_example:
     st.markdown("**How it works**")
     st.markdown(
         "- Paste one overview URL per line\n"
-        "- Paste your `cf_clearance` cookie\n"
-        "- All races are scraped automatically\n"
+        "- Click Generate Tips\n"
+        "- All races scraped automatically via Firecrawl\n"
         "- **NAP** = biggest points gap\n"
         "- **NB** = second biggest gap\n"
         "- Gap < 4 pts → 2nd rated horse selected"
     )
-    with st.expander("How to get your cf_clearance cookie"):
-        st.markdown(
-            "1. Open **Chrome** and visit [racingandsports.com.au](https://www.racingandsports.com.au)\n"
-            "2. Pass the Cloudflare check\n"
-            "3. Press **F12** to open DevTools\n"
-            "4. Click **Application** tab\n"
-            "5. In the left panel: **Cookies** → `https://www.racingandsports.com.au`\n"
-            "6. Find **cf_clearance** and copy the **Value** column\n\n"
-            "_The cookie lasts several hours — refresh it if you get errors._"
-        )
 
 run_btn = st.button("▶  Generate Tips", type="primary")
 
@@ -151,12 +130,15 @@ run_btn = st.button("▶  Generate Tips", type="primary")
 # Scraping
 # ---------------------------------------------------------------------------
 
+# Load API key from Streamlit secrets
+firecrawl_api_key = st.secrets.get("FIRECRAWL_API_KEY", "")
+
 if run_btn:
     urls = [u.strip() for u in (urls_input or "").splitlines() if u.strip()]
     if not urls:
         st.warning("Please enter at least one meeting URL.")
-    elif not cf_cookie or not cf_cookie.strip():
-        st.warning("Please paste your cf_clearance cookie value.")
+    elif not firecrawl_api_key:
+        st.error("FIRECRAWL_API_KEY not found in Streamlit secrets.")
     else:
         st.session_state.pop("meeting_results", None)
         all_results = {}
@@ -166,9 +148,9 @@ if run_btn:
                 track_preview = scraper.extract_track_name(url)
                 st.write(f"**{track_preview}** — loading overview...")
                 try:
-                    track, results, nap, nb = scraper.scrape_meeting_with_cookie(
+                    track, results, nap, nb = scraper.scrape_meeting_with_firecrawl(
                         url,
-                        cf_cookie.strip(),
+                        firecrawl_api_key,
                         log_fn=lambda msg: st.write(f"&nbsp;&nbsp;&nbsp;{msg}"),
                     )
                     all_results[track] = (results, nap, nb)

@@ -12,6 +12,7 @@ from urllib.parse import urlparse
 
 from bs4 import BeautifulSoup
 from curl_cffi import requests as cf_requests
+from firecrawl import FirecrawlApp
 from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeoutError
 
 # Chrome UA used for both cookie-based and browser-based requests
@@ -156,6 +157,73 @@ def scrape_meeting_with_cookie(
         race_url = f"{meeting_url.rstrip('/')}/R{r}"
         try:
             html = fetch_with_cookie(race_url, cf_clearance)
+        except Exception as e:
+            log(f"R{r}: fetch failed — {e}")
+            results.append((r, None, 0))
+            continue
+
+        tips = parse_tips(html)
+        if not tips:
+            log(f"R{r}: no tips found")
+            results.append((r, None, 0))
+            continue
+
+        selected, gap = select_horse(tips)
+        rule = "rank 1" if gap >= 4 else "rank 2"
+        log(f"R{r}: {selected['name']} ({rule}, gap={gap})")
+        results.append((r, selected, gap))
+
+    nap, nb = assign_nap_nb(results)
+    return track, results, nap, nb
+
+
+# ---------------------------------------------------------------------------
+# Firecrawl-based fetching (handles Cloudflare automatically)
+# ---------------------------------------------------------------------------
+
+def fetch_with_firecrawl(url: str, api_key: str) -> str:
+    """Fetch a page via Firecrawl — bypasses Cloudflare on their infrastructure."""
+    app = FirecrawlApp(api_key=api_key)
+    result = app.scrape_url(url, formats=["html"])
+    html = getattr(result, "html", None) or (result.get("html") if isinstance(result, dict) else None)
+    if not html:
+        raise ValueError(f"Firecrawl returned no HTML for {url}")
+    return html
+
+
+def scrape_meeting_with_firecrawl(
+    meeting_url: str,
+    api_key: str,
+    log_fn=None,
+) -> tuple:
+    """
+    Scrape a full meeting via Firecrawl.
+    Returns (track_name, results, nap_race, nb_race).
+    """
+    def log(msg):
+        if log_fn:
+            log_fn(msg)
+
+    track = extract_track_name(meeting_url)
+    results = []
+
+    try:
+        html = fetch_with_firecrawl(meeting_url, api_key)
+    except Exception as e:
+        log(f"ERROR loading overview: {e}")
+        return track, [], None, None
+
+    race_count = detect_race_count(html, meeting_url)
+    if race_count == 0:
+        log("ERROR: Could not detect races on overview page.")
+        return track, [], None, None
+
+    log(f"Found {race_count} races")
+
+    for r in range(1, race_count + 1):
+        race_url = f"{meeting_url.rstrip('/')}/R{r}"
+        try:
+            html = fetch_with_firecrawl(race_url, api_key)
         except Exception as e:
             log(f"R{r}: fetch failed — {e}")
             results.append((r, None, 0))
