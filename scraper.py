@@ -12,7 +12,7 @@ from urllib.parse import urlparse
 
 from bs4 import BeautifulSoup
 from curl_cffi import requests as cf_requests
-from firecrawl import FirecrawlApp
+from firecrawl import Firecrawl
 from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeoutError
 
 # Chrome UA used for both cookie-based and browser-based requests
@@ -183,9 +183,11 @@ def scrape_meeting_with_cookie(
 
 def fetch_with_firecrawl(url: str, api_key: str) -> str:
     """Fetch a page via Firecrawl — bypasses Cloudflare on their infrastructure."""
-    app = FirecrawlApp(api_key=api_key)
-    result = app.scrape_url(url, formats=["html"])
-    html = getattr(result, "html", None) or (result.get("html") if isinstance(result, dict) else None)
+    app = Firecrawl(api_key=api_key)
+    result = app.scrape(url, formats=["html"])
+    html = getattr(result, "html", None)
+    if not html and isinstance(result, dict):
+        html = result.get("html")
     if not html:
         raise ValueError(f"Firecrawl returned no HTML for {url}")
     return html
