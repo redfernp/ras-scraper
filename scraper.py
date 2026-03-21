@@ -11,7 +11,15 @@ import time
 from urllib.parse import urlparse
 
 from bs4 import BeautifulSoup
+from curl_cffi import requests as cf_requests
 from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeoutError
+
+# Chrome UA used for both cookie-based and browser-based requests
+_USER_AGENT = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) "
+    "Chrome/122.0.0.0 Safari/537.36"
+)
 
 
 # ---------------------------------------------------------------------------
@@ -88,6 +96,84 @@ def assign_nap_nb(results: list) -> tuple:
     nap = ranked[0][0] if len(ranked) >= 1 else None
     nb  = ranked[1][0] if len(ranked) >= 2 else None
     return nap, nb
+
+
+# ---------------------------------------------------------------------------
+# Cookie-based HTTP fetching (no browser required)
+# ---------------------------------------------------------------------------
+
+def _make_session(cf_clearance: str) -> cf_requests.Session:
+    session = cf_requests.Session(impersonate="chrome")
+    session.headers.update({"User-Agent": _USER_AGENT})
+    session.cookies.set(
+        "cf_clearance", cf_clearance, domain="www.racingandsports.com.au"
+    )
+    return session
+
+
+def fetch_with_cookie(url: str, cf_clearance: str) -> str:
+    """Fetch a page using a cf_clearance cookie. Raises on failure."""
+    session = _make_session(cf_clearance)
+    r = session.get(url, timeout=30)
+    if r.status_code == 403:
+        raise ValueError("CF cookie rejected (403) — cookie may have expired.")
+    r.raise_for_status()
+    if "Just a moment" in r.text or "Performing security verification" in r.text:
+        raise ValueError("CF challenge page returned — cookie may have expired.")
+    return r.text
+
+
+def scrape_meeting_with_cookie(
+    meeting_url: str,
+    cf_clearance: str,
+    log_fn=None,
+) -> tuple:
+    """
+    Scrape a full meeting using a cf_clearance cookie (no browser needed).
+    Returns (track_name, results, nap_race, nb_race).
+    """
+    def log(msg):
+        if log_fn:
+            log_fn(msg)
+
+    track = extract_track_name(meeting_url)
+    results = []
+
+    try:
+        html = fetch_with_cookie(meeting_url, cf_clearance)
+    except Exception as e:
+        log(f"ERROR loading overview: {e}")
+        return track, [], None, None
+
+    race_count = detect_race_count(html, meeting_url)
+    if race_count == 0:
+        log("ERROR: Could not detect races on overview page.")
+        return track, [], None, None
+
+    log(f"Found {race_count} races")
+
+    for r in range(1, race_count + 1):
+        race_url = f"{meeting_url.rstrip('/')}/R{r}"
+        try:
+            html = fetch_with_cookie(race_url, cf_clearance)
+        except Exception as e:
+            log(f"R{r}: fetch failed — {e}")
+            results.append((r, None, 0))
+            continue
+
+        tips = parse_tips(html)
+        if not tips:
+            log(f"R{r}: no tips found")
+            results.append((r, None, 0))
+            continue
+
+        selected, gap = select_horse(tips)
+        rule = "rank 1" if gap >= 4 else "rank 2"
+        log(f"R{r}: {selected['name']} ({rule}, gap={gap})")
+        results.append((r, selected, gap))
+
+    nap, nb = assign_nap_nb(results)
+    return track, results, nap, nb
 
 
 # ---------------------------------------------------------------------------
