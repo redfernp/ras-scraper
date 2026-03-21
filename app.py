@@ -1,7 +1,27 @@
+import subprocess
+import sys
+
 import streamlit as st
 from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeoutError
 
 import scraper
+
+
+# ---------------------------------------------------------------------------
+# Install Playwright Chromium on first run (required on Streamlit Cloud)
+# ---------------------------------------------------------------------------
+
+@st.cache_resource
+def ensure_playwright_browser():
+    result = subprocess.run(
+        [sys.executable, "-m", "playwright", "install", "chromium"],
+        capture_output=True, text=True,
+    )
+    if result.returncode != 0:
+        st.warning(f"Playwright install warning: {result.stderr[:300]}")
+    return True
+
+ensure_playwright_browser()
 
 # ---------------------------------------------------------------------------
 # Page config
@@ -122,11 +142,15 @@ if run_btn:
             try:
                 with sync_playwright() as p:
                     browser = p.chromium.launch(
-                        headless=False,
-                        args=["--start-maximized"],
+                        headless=True,
+                        args=[
+                            "--no-sandbox",
+                            "--disable-setuid-sandbox",
+                            "--disable-dev-shm-usage",
+                        ],
                     )
                     context = browser.new_context(
-                        viewport=None,
+                        viewport={"width": 1280, "height": 900},
                         user_agent=(
                             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
                             "AppleWebKit/537.36 (KHTML, like Gecko) "
