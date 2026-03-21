@@ -266,6 +266,14 @@ def scrape_meeting_with_page(
             log(f"R{r}: {selected['name']} ({rule}, gap={gap})")
             results.append((r, selected, gap))
 
+    except Exception as e:
+        log(f"ERROR: {e}")
+    finally:
+        try:
+            page.close()
+        except Exception:
+            pass
+
     nap, nb = assign_nap_nb(results)
     return track, results, nap, nb
 
