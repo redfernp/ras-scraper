@@ -116,13 +116,23 @@ with col_input:
 with col_example:
     st.markdown("**How it works**")
     st.markdown(
-        "- Paste one overview URL per line\n"
-        "- Click Generate Tips\n"
-        "- All races scraped automatically via Firecrawl\n"
+        "- Launch Chrome with the command below\n"
+        "- Paste meeting URLs and click Generate\n"
+        "- App connects to your real Chrome\n"
         "- **NAP** = biggest points gap\n"
         "- **NB** = second biggest gap\n"
         "- Gap < 4 pts → 2nd rated horse selected"
     )
+    with st.expander("Step 1 — Launch Chrome with remote debugging"):
+        st.markdown("**Close all Chrome windows first**, then run this command:")
+        st.code(
+            r'"C:\Program Files\Google\Chrome\Application\chrome.exe" --remote-debugging-port=9222 --user-data-dir="C:\ChromeDebug"',
+            language="bash",
+        )
+        st.markdown(
+            "A Chrome window will open. Visit [racingandsports.com.au](https://www.racingandsports.com.au) "
+            "and pass the Cloudflare check once. Then come back here and click **Generate Tips**."
+        )
 
 run_btn = st.button("▶  Generate Tips", type="primary")
 
@@ -130,36 +140,52 @@ run_btn = st.button("▶  Generate Tips", type="primary")
 # Scraping
 # ---------------------------------------------------------------------------
 
-# Load API key from Streamlit secrets
-firecrawl_api_key = st.secrets.get("FIRECRAWL_API_KEY", "")
-
 if run_btn:
     urls = [u.strip() for u in (urls_input or "").splitlines() if u.strip()]
     if not urls:
         st.warning("Please enter at least one meeting URL.")
-    elif not firecrawl_api_key:
-        st.error("FIRECRAWL_API_KEY not found in Streamlit secrets.")
     else:
         st.session_state.pop("meeting_results", None)
         all_results = {}
 
-        with st.status("Scraping meetings...", expanded=True) as status:
-            for url in urls:
-                track_preview = scraper.extract_track_name(url)
-                st.write(f"**{track_preview}** — loading overview...")
-                try:
-                    track, results, nap, nb = scraper.scrape_meeting_with_firecrawl(
-                        url,
-                        firecrawl_api_key,
-                        log_fn=lambda msg: st.write(f"&nbsp;&nbsp;&nbsp;{msg}"),
-                    )
-                    all_results[track] = (results, nap, nb)
-                    st.write(f"**{track}** done — {len(results)} races scraped.")
-                except Exception as e:
-                    st.write(f"**{track_preview}** — error: {e}")
+        with st.status("Connecting to Chrome...", expanded=True) as status:
+            try:
+                with sync_playwright() as p:
+                    try:
+                        # Connect to the user's real Chrome (launched with --remote-debugging-port=9222)
+                        browser = p.chromium.connect_over_cdp("http://localhost:9222")
+                        context = browser.contexts[0] if browser.contexts else browser.new_context()
+                        st.write("Connected to Chrome.")
+                    except Exception as e:
+                        status.update(
+                            label="Could not connect to Chrome. Did you launch it with --remote-debugging-port=9222?",
+                            state="error",
+                        )
+                        st.error(
+                            "Chrome not found on port 9222. "
+                            "Please close Chrome and relaunch it using the command in 'Step 1' above."
+                        )
+                        st.stop()
 
-            status.update(label="Done!", state="complete", expanded=False)
-            st.session_state["meeting_results"] = all_results
+                    for url in urls:
+                        track_preview = scraper.extract_track_name(url)
+                        st.write(f"**{track_preview}** — loading overview...")
+                        try:
+                            track, results, nap, nb = scraper.scrape_meeting_with_page(
+                                url,
+                                context,
+                                log_fn=lambda msg: st.write(f"&nbsp;&nbsp;&nbsp;{msg}"),
+                            )
+                            all_results[track] = (results, nap, nb)
+                            st.write(f"**{track}** done — {len(results)} races scraped.")
+                        except Exception as e:
+                            st.write(f"**{track_preview}** — error: {e}")
+
+                status.update(label="Done!", state="complete", expanded=False)
+                st.session_state["meeting_results"] = all_results
+
+            except Exception as e:
+                status.update(label=f"Error: {e}", state="error")
 
 # ---------------------------------------------------------------------------
 # Results display

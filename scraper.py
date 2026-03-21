@@ -369,6 +369,7 @@ def scrape_meeting_with_page(
 
     track = extract_track_name(meeting_url)
     page = create_page(context)
+    results = []
 
     try:
         page, ok = safe_goto(page, meeting_url, context)
@@ -376,7 +377,7 @@ def scrape_meeting_with_page(
             log("ERROR: Could not load overview page.")
             return track, [], None, None
 
-        if not wait_for_page(page, timeout=45):
+        if not wait_for_page(page, timeout=90):
             log("ERROR: Cloudflare challenge did not clear.")
             return track, [], None, None
 
@@ -454,13 +455,23 @@ def make_context(browser, headless: bool = False):
     )
 
 
-def scrape_meeting(meeting_url: str) -> None:
+def scrape_meeting(meeting_url: str, cdp_url: str = "http://localhost:9222") -> None:
     print(f"\nLoading: {meeting_url}")
-    print("Browser opening — solve Cloudflare challenge if prompted.\n")
+    print(f"Connecting to Chrome on {cdp_url} ...\n")
 
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=False, args=["--start-maximized"])
-        context = make_context(browser)
+        try:
+            browser = p.chromium.connect_over_cdp(cdp_url)
+            context = browser.contexts[0] if browser.contexts else browser.new_context()
+            print("Connected to your Chrome browser.\n")
+        except Exception:
+            print(
+                "Could not connect to Chrome.\n"
+                "Please close Chrome and relaunch with:\n"
+                r'  "C:\Program Files\Google\Chrome\Application\chrome.exe"'
+                " --remote-debugging-port=9222 --user-data-dir=\"C:\\ChromeDebug\"\n"
+            )
+            return
 
         track, results, nap, nb = scrape_meeting_with_page(
             meeting_url, context, log_fn=lambda m: print(f"  {m}")
