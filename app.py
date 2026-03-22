@@ -124,11 +124,18 @@ with col_example:
         "- Gap < 4 pts → 2nd rated horse selected"
     )
     with st.expander("Step 1 — Launch Chrome with remote debugging"):
-        st.markdown("**Close all Chrome windows first**, then run this command:")
-        st.code(
-            r'"C:\Program Files\Google\Chrome\Application\chrome.exe" --remote-debugging-port=9222 --user-data-dir="C:\ChromeDebug"',
-            language="bash",
-        )
+        st.markdown("**Close all Chrome windows first**, then click the button below:")
+        if st.button("🚀 Launch Chrome"):
+            import subprocess
+            subprocess.Popen(
+                [
+                    r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+                    "--remote-debugging-port=9222",
+                    r"--user-data-dir=C:\ChromeDebug",
+                ],
+                close_fds=True,
+            )
+            st.success("Chrome launched! Visit racingandsports.com.au, pass the Cloudflare check, then click Generate Tips.")
         st.markdown(
             "A Chrome window will open. Visit [racingandsports.com.au](https://www.racingandsports.com.au) "
             "and pass the Cloudflare check once. Then come back here and click **Generate Tips**."
