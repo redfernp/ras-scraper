@@ -333,7 +333,7 @@ def safe_goto(page, url: str, context=None) -> tuple:
     except PlaywrightTimeoutError:
         return page, True  # partial load is fine
     except Exception as e:
-        if "crashed" in str(e).lower() and context:
+        if any(w in str(e).lower() for w in ("crashed", "closed")) and context:
             try:
                 page.close()
             except Exception:
