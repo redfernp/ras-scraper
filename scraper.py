@@ -495,6 +495,7 @@ def scrape_meeting(meeting_url: str, cdp_url: str = "http://localhost:9222") -> 
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Usage: python scraper.py <meeting-url>")
+        print("Usage: python scraper.py <url1> [url2] [url3] ...")
         sys.exit(1)
-    scrape_meeting(sys.argv[1])
+    for url in sys.argv[1:]:
+        scrape_meeting(url)
