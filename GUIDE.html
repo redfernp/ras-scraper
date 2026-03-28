@@ -15,7 +15,7 @@
     }
 
     .container {
-      max-width: 720px;
+      max-width: 740px;
       margin: 0 auto;
     }
 
@@ -25,49 +25,39 @@
       color: #fff;
       border-radius: 12px;
       padding: 32px 36px;
-      margin-bottom: 32px;
+      margin-bottom: 28px;
     }
-    .header h1 {
-      font-size: 1.8em;
-      font-weight: 700;
-      letter-spacing: 0.03em;
-    }
-    .header p {
-      margin-top: 8px;
-      color: #aab4c8;
-      font-size: 1em;
-    }
+    .header h1 { font-size: 1.8em; font-weight: 700; letter-spacing: 0.03em; }
+    .header p  { margin-top: 8px; color: #aab4c8; font-size: 1em; }
 
-    /* Section */
+    /* Section card */
     .section {
       background: #fff;
       border-radius: 12px;
       padding: 28px 32px;
-      margin-bottom: 24px;
+      margin-bottom: 20px;
       box-shadow: 0 1px 4px rgba(0,0,0,0.08);
     }
     .section-title {
-      font-size: 1.1em;
+      font-size: 1.05em;
       font-weight: 700;
       color: #1a1a2e;
       margin-bottom: 18px;
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
     }
-    .section-badge {
+    .badge {
       background: #1a1a2e;
       color: #fff;
       border-radius: 50%;
-      width: 28px;
-      height: 28px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.85em;
-      font-weight: 700;
+      width: 30px; height: 30px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.85em; font-weight: 700;
       flex-shrink: 0;
     }
+    .badge.green { background: #16a34a; }
+    .badge.gold  { background: #d97706; }
 
     /* Steps */
     .step {
@@ -80,283 +70,348 @@
       background: #eef0f8;
       color: #1a1a2e;
       border-radius: 50%;
-      width: 26px;
-      height: 26px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.8em;
-      font-weight: 700;
+      width: 26px; height: 26px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.8em; font-weight: 700;
       flex-shrink: 0;
       margin-top: 2px;
     }
-    .step-body { flex: 1; line-height: 1.6; }
+    .step-body { flex: 1; line-height: 1.65; color: #333; }
     .step-body strong { color: #1a1a2e; }
 
-    /* Note / tip box */
+    /* Notes */
     .note {
-      background: #fffbea;
-      border-left: 4px solid #f5c800;
-      border-radius: 6px;
+      border-radius: 8px;
       padding: 12px 16px;
       font-size: 0.9em;
       margin-top: 14px;
       line-height: 1.6;
     }
-    .note.green {
-      background: #f0fdf4;
-      border-color: #22c55e;
-    }
-    .note.red {
-      background: #fff5f5;
-      border-color: #ef4444;
-    }
+    .note.yellow { background: #fffbea; border-left: 4px solid #f5c800; }
+    .note.green  { background: #f0fdf4; border-left: 4px solid #22c55e; }
+    .note.red    { background: #fff5f5; border-left: 4px solid #ef4444; }
+    .note.blue   { background: #eff6ff; border-left: 4px solid #3b82f6; }
 
-    /* Code / file name */
+    /* Code / filename */
     code {
       background: #f0f0f0;
       border-radius: 4px;
       padding: 2px 7px;
       font-family: "Courier New", monospace;
-      font-size: 0.9em;
+      font-size: 0.88em;
       color: #c0392b;
     }
 
-    /* Link */
     a { color: #2563eb; text-decoration: none; }
     a:hover { text-decoration: underline; }
 
-    /* Divider */
-    hr {
-      border: none;
-      border-top: 1px solid #eee;
-      margin: 20px 0;
-    }
+    hr { border: none; border-top: 1px solid #eee; margin: 16px 0; }
 
-    /* Troubleshoot table */
-    .trouble-item {
-      margin-bottom: 16px;
+    /* Mode cards */
+    .mode-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-top: 14px;
     }
-    .trouble-q {
-      font-weight: 600;
-      color: #1a1a2e;
-      margin-bottom: 4px;
+    .mode-card {
+      border: 2px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 16px;
     }
-    .trouble-a {
-      color: #444;
-      font-size: 0.95em;
-      line-height: 1.6;
+    .mode-card.primary { border-color: #1a1a2e; }
+    .mode-card h4 { font-size: 0.95em; margin-bottom: 6px; color: #1a1a2e; }
+    .mode-card p  { font-size: 0.85em; color: #555; line-height: 1.5; }
+    .mode-tag {
+      display: inline-block;
+      background: #1a1a2e;
+      color: #fff;
+      font-size: 0.7em;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 10px;
+      margin-bottom: 8px;
     }
+    .mode-tag.alt { background: #6b7280; }
 
-    /* Footer */
+    .trouble-q { font-weight: 600; color: #1a1a2e; margin-bottom: 4px; }
+    .trouble-a { color: #444; font-size: 0.95em; line-height: 1.6; }
+
     .footer {
       text-align: center;
-      color: #999;
-      font-size: 0.85em;
-      margin-top: 16px;
+      color: #aaa;
+      font-size: 0.82em;
+      margin-top: 20px;
     }
   </style>
 </head>
 <body>
 <div class="container">
 
-  <!-- Header -->
   <div class="header">
     <h1>🏇 RAS Tips Generator</h1>
-    <p>User Guide — Getting started and daily use</p>
+    <p>Setup &amp; User Guide — how to install and use the app</p>
   </div>
 
-  <!-- Section 0: What you need -->
+  <!-- A: One-time installs -->
   <div class="section">
     <div class="section-title">
-      <div class="section-badge">✓</div>
-      Before You Start — One-Time Requirements
+      <div class="badge">A</div>
+      Before You Start — Install These Once
     </div>
-
-    <p style="margin-bottom:16px; color:#555; font-size:0.95em;">
-      You only need to install these two things once. If you have already done this, skip to <strong>Section 1</strong>.
+    <p style="color:#555;font-size:0.95em;margin-bottom:16px;">
+      You only do this once. After these are installed you never need to touch them again.
     </p>
 
     <div class="step">
-      <div class="step-num">A</div>
+      <div class="step-num">1</div>
       <div class="step-body">
-        <strong>Install Python</strong><br>
-        Go to <a href="https://www.python.org/downloads/" target="_blank">python.org/downloads</a> and download the latest version.<br>
-        <span style="color:#e74c3c; font-weight:600;">Important:</span> During installation, tick the checkbox that says <strong>"Add Python to PATH"</strong> before clicking Install Now.
+        <strong>Install Python 3.11</strong><br>
+        Go to <a href="https://www.python.org/downloads/release/python-3119/" target="_blank">python.org/downloads/release/python-3119</a>
+        and download the <strong>Windows installer (64-bit)</strong>.<br>
+        Run it — <span style="color:#e74c3c;font-weight:600;">before clicking Install Now</span>,
+        tick the checkbox at the bottom that says <strong>"Add Python to PATH"</strong>.
       </div>
     </div>
 
     <div class="step">
-      <div class="step-num">B</div>
+      <div class="step-num">2</div>
       <div class="step-body">
         <strong>Install Git</strong><br>
-        Go to <a href="https://git-scm.com/download/win" target="_blank">git-scm.com/download/win</a> and download the installer.<br>
-        Run it and click <strong>Next</strong> through all the steps — the defaults are fine.
+        Go to <a href="https://git-scm.com/download/win" target="_blank">git-scm.com/download/win</a>
+        and download the installer. Run it and click <strong>Next</strong> all the way through —
+        all the default options are fine.
       </div>
     </div>
 
     <div class="note green">
-      Once Python and Git are installed, you will never need to do this again.
+      Once Python 3.11 and Git are installed, you will never need to do this again.
     </div>
   </div>
 
-  <!-- Section 1: First-time setup -->
+  <!-- B: First-time setup -->
   <div class="section">
     <div class="section-title">
-      <div class="section-badge">1</div>
+      <div class="badge">B</div>
       First-Time Setup — Download the App
     </div>
-
-    <p style="margin-bottom:16px; color:#555; font-size:0.95em;">
-      You only do this once. It downloads the app to your computer.
+    <p style="color:#555;font-size:0.95em;margin-bottom:16px;">
+      You only do this once. It downloads the app and installs everything it needs.
     </p>
 
     <div class="step">
       <div class="step-num">1</div>
       <div class="step-body">
-        Save the file <code>clone_and_setup.bat</code> to your Desktop (your administrator will send this to you).
+        Save the file <code>clone_and_setup.bat</code> to your Desktop
+        (your administrator will send this to you).
       </div>
     </div>
 
     <div class="step">
       <div class="step-num">2</div>
       <div class="step-body">
-        Double-click <code>clone_and_setup.bat</code>.<br>
-        A black window will open and download the app — this takes about a minute.
+        <strong>Double-click</strong> <code>clone_and_setup.bat</code>.<br>
+        A black window opens and downloads the app — this takes 1–2 minutes.
+        Text will scroll past — this is normal, just let it run.
       </div>
     </div>
 
     <div class="step">
       <div class="step-num">3</div>
       <div class="step-body">
-        When it says <strong>"Setup complete!"</strong> press any key to close the window.<br>
-        You will see a new folder called <code>ras-scraper</code> appear on your Desktop (or wherever you saved the setup file).
-      </div>
-    </div>
-
-    <div class="note">
-      You will not need to run <code>clone_and_setup.bat</code> again after this.
-    </div>
-  </div>
-
-  <!-- Section 2: Daily use -->
-  <div class="section">
-    <div class="section-title">
-      <div class="section-badge">2</div>
-      Every Day — Running the App
-    </div>
-
-    <div class="step">
-      <div class="step-num">1</div>
-      <div class="step-body">
-        Open the <code>ras-scraper</code> folder and double-click <code>run.bat</code>.<br>
-        <span style="color:#555; font-size:0.9em;">(Or use the desktop shortcut if one has been created for you.)</span>
-      </div>
-    </div>
-
-    <div class="step">
-      <div class="step-num">2</div>
-      <div class="step-body">
-        A black window will appear briefly — it checks for updates and then opens Chrome and the app in your browser automatically.
-      </div>
-    </div>
-
-    <div class="step">
-      <div class="step-num">3</div>
-      <div class="step-body">
-        <strong>If you see a security check on racingandsports.com.au</strong> — complete it in Chrome. Then come back to the app tab.
+        When the black window says <strong>"Setup complete!"</strong>, press any key to close it.<br>
+        A folder called <code>ras-scraper</code> will appear in the same place as the setup file.
       </div>
     </div>
 
     <div class="step">
       <div class="step-num">4</div>
       <div class="step-body">
-        In the app, paste the race meeting URLs — one per line — into the box.
+        Open the <code>ras-scraper</code> folder. Inside you will see a file called
+        <code>run.bat</code> — this is what you use every day from now on.
+      </div>
+    </div>
+
+    <div class="note yellow">
+      You will never need to run <code>clone_and_setup.bat</code> again.
+    </div>
+  </div>
+
+  <!-- 1: Launching -->
+  <div class="section">
+    <div class="section-title">
+      <div class="badge green">1</div>
+      Every Day — Launching the App
+    </div>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        Open the <code>ras-scraper</code> folder and <strong>double-click <code>run.bat</code></strong>.<br>
+        <span style="color:#555;font-size:0.9em;">Or use the <strong>RAS Tips</strong> shortcut on your Desktop if one was set up for you.</span>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        A black window opens briefly — it checks for updates automatically, then launches
+        Chrome and opens the app in your browser. <strong>Do not close the black window</strong>
+        while using the app — you can minimise it.
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        The app opens at <strong>http://localhost:8501</strong> in your browser.
+        If it doesn't open automatically, type that address into your browser.
+      </div>
+    </div>
+
+    <div class="note green">
+      Every time you run the app it silently downloads the latest version — you never need to update manually.
+    </div>
+  </div>
+
+  <!-- 2: Using the app -->
+  <div class="section">
+    <div class="section-title">
+      <div class="badge green">2</div>
+      Using the App — Generating Tips
+    </div>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        In the app, click <strong>Step 1 — Launch Chrome with remote debugging</strong>
+        to expand it, then click the <strong>🚀 Launch Chrome</strong> button.
+        A Chrome window will open.
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        In that Chrome window, go to
+        <a href="https://www.racingandsports.com.au" target="_blank">racingandsports.com.au</a>.
+        If you see a security check, click through it.
+        Once the site loads normally, come back to the app tab.
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>Choose your mode</strong> using the selector in the app:
+        <div class="mode-grid">
+          <div class="mode-card primary">
+            <div class="mode-tag">Default</div>
+            <h4>Today's Tips</h4>
+            <p>Automatically finds all of today's races for your countries. Nothing to fill in — just click Generate Tips.</p>
+          </div>
+          <div class="mode-card">
+            <div class="mode-tag alt">Future dates</div>
+            <h4>Add Racecard URLs</h4>
+            <p>Paste meeting links manually. Use this to prepare Sunday's tips on a Friday or Saturday.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        Click <strong>▶ Generate Tips</strong> and wait. The app shows progress
+        as it works through each race meeting. This usually takes 2–5 minutes.
       </div>
     </div>
 
     <div class="step">
       <div class="step-num">5</div>
       <div class="step-body">
-        Click <strong>▶ Generate Tips</strong> and wait. Results appear below with your NAP and NB selections highlighted.
+        Results appear on screen with each selection, gap score, and
+        <strong>NAP</strong> / <strong>NB</strong> badges.
+        A <strong>copy-paste block</strong> appears at the bottom for easy sharing,
+        and the tips are automatically saved to a file in the <code>ras-scraper</code> folder.
       </div>
     </div>
 
-    <div class="step">
-      <div class="step-num">6</div>
-      <div class="step-body">
-        Use the <strong>Copy-paste version</strong> at the bottom to grab the tips as plain text.
-      </div>
-    </div>
-
-    <div class="note green">
-      The app automatically downloads the latest version every time you run it — you never need to update it manually.
+    <div class="note blue">
+      <strong>Using Add Racecard URLs?</strong> Paste the full meeting URL from racingandsports.com.au, one per line. Example:<br><br>
+      <code>https://www.racingandsports.com.au/form-guide/thoroughbred/ireland/leopardstown/2026-04-06</code>
     </div>
   </div>
 
-  <!-- Section 3: Understanding results -->
+  <!-- 3: Results -->
   <div class="section">
     <div class="section-title">
-      <div class="section-badge">3</div>
+      <div class="badge gold">3</div>
       Understanding the Results
     </div>
 
     <div class="step">
       <div class="step-num">🥇</div>
       <div class="step-body">
-        <strong>NAP</strong> — The race with the biggest points gap between the top two rated horses. Highest confidence selection.
+        <strong>NAP</strong> — The race with the biggest points gap between the top two rated horses.
+        The highest confidence selection of the day.
       </div>
     </div>
-
     <div class="step">
       <div class="step-num">🥈</div>
       <div class="step-body">
-        <strong>NB</strong> — The race with the second biggest points gap. Second highest confidence selection.
+        <strong>NB</strong> — The race with the second biggest points gap. Second highest confidence.
       </div>
     </div>
-
     <div class="step">
       <div class="step-num">📊</div>
       <div class="step-body">
-        <strong>Gap &lt; 4 pts</strong> — When the gap between the top two is small, the 2nd rated horse is selected instead of the 1st.
+        <strong>Gap &lt; 4 pts</strong> — When the top two horses are close in points,
+        the 2nd rated horse is selected instead of the 1st.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">💾</div>
+      <div class="step-body">
+        Tips are automatically saved to <code>tips_YYYY-MM-DD.txt</code> inside
+        the <code>ras-scraper</code> folder each time you run the app.
       </div>
     </div>
   </div>
 
-  <!-- Section 4: Troubleshooting -->
+  <!-- 4: Troubleshooting -->
   <div class="section">
     <div class="section-title">
-      <div class="section-badge">?</div>
+      <div class="badge">?</div>
       Troubleshooting
     </div>
 
-    <div class="trouble-item">
-      <div class="trouble-q">The app says "Chrome not found on port 9222"</div>
-      <div class="trouble-a">Close the black window, then double-click <code>run.bat</code> again. Make sure Chrome fully opens before clicking Generate Tips.</div>
-    </div>
+    <div class="trouble-q">The app doesn't open in my browser after double-clicking run.bat</div>
+    <div class="trouble-a">Wait 10 seconds, then open your browser and go to <code>http://localhost:8501</code> manually.</div>
     <hr>
-    <div class="trouble-item">
-      <div class="trouble-q">The page just shows a Cloudflare / security check</div>
-      <div class="trouble-a">Complete the check in the Chrome window that opened. Once you pass it, go back to the app tab and click Generate Tips again.</div>
-    </div>
+
+    <div class="trouble-q">Chrome not found — the app shows a red error</div>
+    <div class="trouble-a">Click the <strong>Launch Chrome</strong> button inside the app first, then visit racingandsports.com.au and pass the security check before clicking Generate Tips.</div>
     <hr>
-    <div class="trouble-item">
-      <div class="trouble-q">The black window says "git is not recognised"</div>
-      <div class="trouble-a">Git is not installed. Follow step B in the "Before You Start" section, then try again.</div>
-    </div>
+
+    <div class="trouble-q">I see a Cloudflare / security check on racingandsports.com.au</div>
+    <div class="trouble-a">Complete the check in the Chrome window that opened. Once the site loads normally, go back to the app tab and click Generate Tips.</div>
     <hr>
-    <div class="trouble-item">
-      <div class="trouble-q">The app opened but shows no results / error on a race</div>
-      <div class="trouble-a">The website may have changed layout for that race. Try again in a few minutes, or contact your administrator.</div>
-    </div>
+
+    <div class="trouble-q">No meetings found for my countries today</div>
+    <div class="trouble-a">There may genuinely be no racing today for those countries. Try <strong>Add Racecard URLs</strong> mode and paste a specific meeting link to check.</div>
     <hr>
-    <div class="trouble-item">
-      <div class="trouble-q">The black window closed immediately with no message</div>
-      <div class="trouble-a">Right-click <code>run.bat</code>, choose <strong>Open with &gt; Notepad</strong> to see the file, or contact your administrator.</div>
-    </div>
+
+    <div class="trouble-q">A race shows a dash (—) instead of a horse name</div>
+    <div class="trouble-a">No tips data was found for that race — it may not have a form guide yet or the page timed out. All other races are unaffected.</div>
+    <hr>
+
+    <div class="trouble-q">The black window closed immediately when I double-clicked run.bat</div>
+    <div class="trouble-a">Something went wrong at startup. Contact your administrator and describe what you saw.</div>
 
     <div class="note red" style="margin-top:20px;">
-      <strong>Don't close the black window</strong> while you are using the app — it keeps the app running. You can minimise it.
+      <strong>Remember:</strong> Never close the black command window while using the app —
+      it keeps everything running. Minimise it instead.
     </div>
   </div>
 
