@@ -143,6 +143,36 @@ with col_right:
     )
     st.caption("All thoroughbred meetings for these countries are scraped automatically.")
 
+st.divider()
+
+# ---------------------------------------------------------------------------
+# Mode selector
+# ---------------------------------------------------------------------------
+
+mode = st.radio(
+    "Select mode",
+    options=["Today's Tips", "Add Racecard URLs"],
+    horizontal=True,
+    help="Today's Tips auto-discovers today's meetings. Add Racecard URLs lets you paste meeting links for a future date.",
+)
+
+manual_urls = []
+if mode == "Add Racecard URLs":
+    st.markdown(
+        "Paste race meeting URLs below — one per line. "
+        "Use this to generate tips for a future date (e.g. Sunday's card on a Friday)."
+    )
+    urls_input = st.text_area(
+        "Meeting URLs",
+        placeholder=(
+            "https://www.racingandsports.com.au/form-guide/thoroughbred/ireland/leopardstown/2026-04-06\n"
+            "https://www.racingandsports.com.au/form-guide/thoroughbred/hong-kong/sha-tin/2026-04-06"
+        ),
+        height=130,
+        label_visibility="collapsed",
+    )
+    manual_urls = [u.strip() for u in (urls_input or "").splitlines() if u.strip()]
+
 run_btn = st.button("▶  Generate Tips", type="primary")
 
 # ---------------------------------------------------------------------------
@@ -174,34 +204,56 @@ if run_btn:
                     )
                     _ok = False
 
-                # ── Find today's meetings ────────────────────────────────────
+                # ── Find meetings (auto or manual) ───────────────────────────
                 if _ok:
-                    status.update(label="Finding today's meetings...")
-                    meetings = scraper.get_todays_race_urls(
-                        context,
-                        log_fn=lambda msg: st.write(msg),
-                    )
-                    if not meetings:
-                        status.update(label="No meetings found for your countries today.", state="error")
-                        st.warning(
-                            "No thoroughbred meetings found today for: "
-                            "South Africa, Ireland, Malaysia, Hong Kong, Mauritius, "
-                            "France, Japan, UAE, Singapore."
+                    if mode == "Today's Tips":
+                        status.update(label="Finding today's meetings...")
+                        meetings = scraper.get_todays_race_urls(
+                            context,
+                            log_fn=lambda msg: st.write(msg),
                         )
-                        _ok = False
+                        if not meetings:
+                            status.update(label="No meetings found for your countries today.", state="error")
+                            st.warning(
+                                "No thoroughbred meetings found today for: "
+                                "South Africa, Ireland, Malaysia, Hong Kong, Mauritius, "
+                                "France, Japan, UAE, Singapore."
+                            )
+                            _ok = False
+                    else:
+                        # Manual URL mode — validate input then build meeting list
+                        if not manual_urls:
+                            status.update(label="No URLs entered.", state="error")
+                            st.error("Please paste at least one meeting URL in the box above.")
+                            _ok = False
+                        else:
+                            meetings = [
+                                (scraper.extract_track_name(u), [u])
+                                for u in manual_urls
+                            ]
+                            st.write(f"Using {len(meetings)} manually entered meeting(s).")
 
                 # ── Scrape each meeting ──────────────────────────────────────
                 if _ok:
                     status.update(label=f"Scraping {len(meetings)} meeting(s)...")
                     for track_preview, race_urls in meetings:
-                        st.write(f"**{track_preview}** — scraping {len(race_urls)} races...")
+                        st.write(f"**{track_preview}** — scraping...")
                         try:
-                            track, results, nap, nb = scraper.scrape_races_from_urls(
-                                track_preview,
-                                race_urls,
-                                context,
-                                log_fn=lambda msg: st.write(f"&nbsp;&nbsp;&nbsp;{msg}"),
-                            )
+                            if mode == "Today's Tips":
+                                # Race URLs already known — scrape directly
+                                track, results, nap, nb = scraper.scrape_races_from_urls(
+                                    track_preview,
+                                    race_urls,
+                                    context,
+                                    log_fn=lambda msg: st.write(f"&nbsp;&nbsp;&nbsp;{msg}"),
+                                )
+                            else:
+                                # Meeting URL provided — detect races then scrape
+                                track, results, nap, nb = scraper.scrape_meeting_with_page(
+                                    race_urls[0],
+                                    context,
+                                    log_fn=lambda msg: st.write(f"&nbsp;&nbsp;&nbsp;{msg}"),
+                                )
                             all_results[track] = (results, nap, nb)
                             st.write(f"**{track}** done — {len(results)} races scraped.")
                         except Exception as e:
