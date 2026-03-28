@@ -247,6 +247,164 @@ def scrape_meeting_with_firecrawl(
 
 
 # ---------------------------------------------------------------------------
+# Auto-discovery — today's meetings for target countries
+# ---------------------------------------------------------------------------
+
+FORM_GUIDE_URL = "https://www.racingandsports.com.au/form-guide"
+
+TARGET_COUNTRIES = [
+    "south-africa",
+    "ireland",
+    "malaysia",
+    "hong-kong",
+    "mauritius",
+    "france",
+    "japan",
+    "united-arab-emirates",
+    "singapore",
+]
+
+_RACE_PATH_RE = re.compile(
+    r"/form-guide/thoroughbred/([^/]+)/([^/]+)/(\d{4}-\d{2}-\d{2})/R(\d+)"
+)
+
+
+def get_todays_race_urls(context, log_fn=None) -> list[tuple]:
+    """
+    Navigate to /form-guide, extract all individual race URLs for TARGET_COUNTRIES
+    directly from the overview page (no per-meeting navigation needed).
+    Returns list of (track_name, [race_url, ...]) sorted by race number.
+    """
+    def log(msg):
+        if log_fn:
+            log_fn(msg)
+
+    base = "https://www.racingandsports.com.au"
+    page = create_page(context)
+    meetings = {}  # meeting_url -> {track, races: {race_num: race_url}}
+
+    try:
+        page, ok = safe_goto(page, FORM_GUIDE_URL, context)
+        if not ok:
+            log("ERROR: Could not load the form guide overview page.")
+            return []
+
+        if not wait_for_page(page, timeout=90):
+            log("ERROR: Cloudflare challenge did not clear on overview page.")
+            return []
+
+        try:
+            page.wait_for_load_state("networkidle", timeout=15_000)
+        except PlaywrightTimeoutError:
+            pass
+
+        soup = BeautifulSoup(page.content(), "html.parser")
+
+        for a in soup.find_all("a", href=True):
+            href = a["href"]
+            m = _RACE_PATH_RE.search(href)
+            if not m:
+                continue
+            country_slug = m.group(1)
+            if country_slug not in TARGET_COUNTRIES:
+                continue
+
+            track_slug  = m.group(2)
+            date        = m.group(3)
+            race_num    = int(m.group(4))
+            meeting_path = f"/form-guide/thoroughbred/{country_slug}/{track_slug}/{date}"
+            meeting_url  = base + meeting_path
+            race_url     = base + f"{meeting_path}/R{race_num}"
+
+            if meeting_url not in meetings:
+                meetings[meeting_url] = {
+                    "track": extract_track_name(meeting_url),
+                    "races": {},
+                }
+            meetings[meeting_url]["races"][race_num] = race_url
+
+        results = []
+        for data in meetings.values():
+            race_urls = [data["races"][n] for n in sorted(data["races"])]
+            results.append((data["track"], race_urls))
+            log(f"Found {data['track']}: {len(race_urls)} race(s)")
+
+        if not results:
+            log("No meetings found for target countries today.")
+
+    except Exception as e:
+        log(f"ERROR discovering meetings: {e}")
+    finally:
+        try:
+            page.close()
+        except Exception:
+            pass
+
+    return results
+
+
+def scrape_races_from_urls(
+    track: str,
+    race_urls: list,
+    context,
+    log_fn=None,
+) -> tuple:
+    """
+    Scrape a meeting given explicit race URLs extracted from the overview page.
+    Skips race-count detection — faster and more reliable.
+    Returns (track_name, results, nap_race, nb_race).
+    """
+    def log(msg):
+        if log_fn:
+            log_fn(msg)
+
+    page = create_page(context)
+    results = []
+
+    try:
+        for race_url in race_urls:
+            r = int(race_url.rstrip("/").split("/R")[-1])
+
+            page, ok = safe_goto(page, race_url, context)
+            if not ok:
+                log(f"R{r}: page crashed — skipped")
+                results.append((r, None, 0))
+                continue
+
+            if not wait_for_page(page, timeout=30):
+                log(f"R{r}: challenge stuck — skipped")
+                results.append((r, None, 0))
+                continue
+
+            try:
+                page.wait_for_load_state("networkidle", timeout=15_000)
+            except PlaywrightTimeoutError:
+                pass
+
+            tips = parse_tips(page.content())
+            if not tips:
+                log(f"R{r}: no tips found")
+                results.append((r, None, 0))
+                continue
+
+            selected, gap = select_horse(tips)
+            rule = "rank 1" if gap >= 4 else "rank 2"
+            log(f"R{r}: {selected['name']} ({rule}, gap={gap})")
+            results.append((r, selected, gap))
+
+    except Exception as e:
+        log(f"ERROR: {e}")
+    finally:
+        try:
+            page.close()
+        except Exception:
+            pass
+
+    nap, nb = assign_nap_nb(results)
+    return track, results, nap, nb
+
+
+# ---------------------------------------------------------------------------
 # Overview page helpers
 # ---------------------------------------------------------------------------
 

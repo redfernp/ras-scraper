@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>RAS Tips Generator — User Guide</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f5f5f5;
+      color: #222;
+      padding: 40px 20px;
+    }
+
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    .header {
+      background: #1a1a2e;
+      color: #fff;
+      border-radius: 12px;
+      padding: 32px 36px;
+      margin-bottom: 32px;
+    }
+    .header h1 {
+      font-size: 1.8em;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+    }
+    .header p {
+      margin-top: 8px;
+      color: #aab4c8;
+      font-size: 1em;
+    }
+
+    /* Section */
+    .section {
+      background: #fff;
+      border-radius: 12px;
+      padding: 28px 32px;
+      margin-bottom: 24px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+    .section-title {
+      font-size: 1.1em;
+      font-weight: 700;
+      color: #1a1a2e;
+      margin-bottom: 18px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .section-badge {
+      background: #1a1a2e;
+      color: #fff;
+      border-radius: 50%;
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85em;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    /* Steps */
+    .step {
+      display: flex;
+      gap: 14px;
+      margin-bottom: 16px;
+      align-items: flex-start;
+    }
+    .step-num {
+      background: #eef0f8;
+      color: #1a1a2e;
+      border-radius: 50%;
+      width: 26px;
+      height: 26px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8em;
+      font-weight: 700;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .step-body { flex: 1; line-height: 1.6; }
+    .step-body strong { color: #1a1a2e; }
+
+    /* Note / tip box */
+    .note {
+      background: #fffbea;
+      border-left: 4px solid #f5c800;
+      border-radius: 6px;
+      padding: 12px 16px;
+      font-size: 0.9em;
+      margin-top: 14px;
+      line-height: 1.6;
+    }
+    .note.green {
+      background: #f0fdf4;
+      border-color: #22c55e;
+    }
+    .note.red {
+      background: #fff5f5;
+      border-color: #ef4444;
+    }
+
+    /* Code / file name */
+    code {
+      background: #f0f0f0;
+      border-radius: 4px;
+      padding: 2px 7px;
+      font-family: "Courier New", monospace;
+      font-size: 0.9em;
+      color: #c0392b;
+    }
+
+    /* Link */
+    a { color: #2563eb; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* Divider */
+    hr {
+      border: none;
+      border-top: 1px solid #eee;
+      margin: 20px 0;
+    }
+
+    /* Troubleshoot table */
+    .trouble-item {
+      margin-bottom: 16px;
+    }
+    .trouble-q {
+      font-weight: 600;
+      color: #1a1a2e;
+      margin-bottom: 4px;
+    }
+    .trouble-a {
+      color: #444;
+      font-size: 0.95em;
+      line-height: 1.6;
+    }
+
+    /* Footer */
+    .footer {
+      text-align: center;
+      color: #999;
+      font-size: 0.85em;
+      margin-top: 16px;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <div class="header">
+    <h1>🏇 RAS Tips Generator</h1>
+    <p>User Guide — Getting started and daily use</p>
+  </div>
+
+  <!-- Section 0: What you need -->
+  <div class="section">
+    <div class="section-title">
+      <div class="section-badge">✓</div>
+      Before You Start — One-Time Requirements
+    </div>
+
+    <p style="margin-bottom:16px; color:#555; font-size:0.95em;">
+      You only need to install these two things once. If you have already done this, skip to <strong>Section 1</strong>.
+    </p>
+
+    <div class="step">
+      <div class="step-num">A</div>
+      <div class="step-body">
+        <strong>Install Python</strong><br>
+        Go to <a href="https://www.python.org/downloads/" target="_blank">python.org/downloads</a> and download the latest version.<br>
+        <span style="color:#e74c3c; font-weight:600;">Important:</span> During installation, tick the checkbox that says <strong>"Add Python to PATH"</strong> before clicking Install Now.
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">B</div>
+      <div class="step-body">
+        <strong>Install Git</strong><br>
+        Go to <a href="https://git-scm.com/download/win" target="_blank">git-scm.com/download/win</a> and download the installer.<br>
+        Run it and click <strong>Next</strong> through all the steps — the defaults are fine.
+      </div>
+    </div>
+
+    <div class="note green">
+      Once Python and Git are installed, you will never need to do this again.
+    </div>
+  </div>
+
+  <!-- Section 1: First-time setup -->
+  <div class="section">
+    <div class="section-title">
+      <div class="section-badge">1</div>
+      First-Time Setup — Download the App
+    </div>
+
+    <p style="margin-bottom:16px; color:#555; font-size:0.95em;">
+      You only do this once. It downloads the app to your computer.
+    </p>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        Save the file <code>clone_and_setup.bat</code> to your Desktop (your administrator will send this to you).
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        Double-click <code>clone_and_setup.bat</code>.<br>
+        A black window will open and download the app — this takes about a minute.
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        When it says <strong>"Setup complete!"</strong> press any key to close the window.<br>
+        You will see a new folder called <code>ras-scraper</code> appear on your Desktop (or wherever you saved the setup file).
+      </div>
+    </div>
+
+    <div class="note">
+      You will not need to run <code>clone_and_setup.bat</code> again after this.
+    </div>
+  </div>
+
+  <!-- Section 2: Daily use -->
+  <div class="section">
+    <div class="section-title">
+      <div class="section-badge">2</div>
+      Every Day — Running the App
+    </div>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        Open the <code>ras-scraper</code> folder and double-click <code>run.bat</code>.<br>
+        <span style="color:#555; font-size:0.9em;">(Or use the desktop shortcut if one has been created for you.)</span>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        A black window will appear briefly — it checks for updates and then opens Chrome and the app in your browser automatically.
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>If you see a security check on racingandsports.com.au</strong> — complete it in Chrome. Then come back to the app tab.
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        In the app, paste the race meeting URLs — one per line — into the box.
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        Click <strong>▶ Generate Tips</strong> and wait. Results appear below with your NAP and NB selections highlighted.
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">6</div>
+      <div class="step-body">
+        Use the <strong>Copy-paste version</strong> at the bottom to grab the tips as plain text.
+      </div>
+    </div>
+
+    <div class="note green">
+      The app automatically downloads the latest version every time you run it — you never need to update it manually.
+    </div>
+  </div>
+
+  <!-- Section 3: Understanding results -->
+  <div class="section">
+    <div class="section-title">
+      <div class="section-badge">3</div>
+      Understanding the Results
+    </div>
+
+    <div class="step">
+      <div class="step-num">🥇</div>
+      <div class="step-body">
+        <strong>NAP</strong> — The race with the biggest points gap between the top two rated horses. Highest confidence selection.
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">🥈</div>
+      <div class="step-body">
+        <strong>NB</strong> — The race with the second biggest points gap. Second highest confidence selection.
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">📊</div>
+      <div class="step-body">
+        <strong>Gap &lt; 4 pts</strong> — When the gap between the top two is small, the 2nd rated horse is selected instead of the 1st.
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 4: Troubleshooting -->
+  <div class="section">
+    <div class="section-title">
+      <div class="section-badge">?</div>
+      Troubleshooting
+    </div>
+
+    <div class="trouble-item">
+      <div class="trouble-q">The app says "Chrome not found on port 9222"</div>
+      <div class="trouble-a">Close the black window, then double-click <code>run.bat</code> again. Make sure Chrome fully opens before clicking Generate Tips.</div>
+    </div>
+    <hr>
+    <div class="trouble-item">
+      <div class="trouble-q">The page just shows a Cloudflare / security check</div>
+      <div class="trouble-a">Complete the check in the Chrome window that opened. Once you pass it, go back to the app tab and click Generate Tips again.</div>
+    </div>
+    <hr>
+    <div class="trouble-item">
+      <div class="trouble-q">The black window says "git is not recognised"</div>
+      <div class="trouble-a">Git is not installed. Follow step B in the "Before You Start" section, then try again.</div>
+    </div>
+    <hr>
+    <div class="trouble-item">
+      <div class="trouble-q">The app opened but shows no results / error on a race</div>
+      <div class="trouble-a">The website may have changed layout for that race. Try again in a few minutes, or contact your administrator.</div>
+    </div>
+    <hr>
+    <div class="trouble-item">
+      <div class="trouble-q">The black window closed immediately with no message</div>
+      <div class="trouble-a">Right-click <code>run.bat</code>, choose <strong>Open with &gt; Notepad</strong> to see the file, or contact your administrator.</div>
+    </div>
+
+    <div class="note red" style="margin-top:20px;">
+      <strong>Don't close the black window</strong> while you are using the app — it keeps the app running. You can minimise it.
+    </div>
+  </div>
+
+  <div class="footer">
+    RAS Tips Generator &mdash; Internal Use Only
+  </div>
+
+</div>
+</body>
+</html>

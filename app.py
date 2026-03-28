@@ -1,5 +1,13 @@
+import asyncio
+import datetime
+import os
 import subprocess
 import sys
+
+# Fix for Windows: Streamlit switches asyncio to SelectorEventLoop which breaks
+# Playwright's subprocess. Force ProactorEventLoop before anything else.
+if sys.platform == "win32":
+    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 
 import streamlit as st
 from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeoutError
@@ -88,9 +96,8 @@ st.markdown("""
 
 st.title("🏇 Racing & Sports Tips Generator")
 st.caption(
-    "Paste today's race meeting overview URLs below (one per line). "
-    "A browser will open once — solve the Cloudflare check if prompted, "
-    "then all races across all meetings are scraped automatically."
+    "Automatically finds today's thoroughbred meetings for your selected countries, "
+    "scrapes every race, and generates NAP & NB selections."
 )
 
 st.divider()
@@ -99,31 +106,10 @@ st.divider()
 # Input
 # ---------------------------------------------------------------------------
 
-col_input, col_example = st.columns([3, 2])
+col_left, col_right = st.columns([3, 2])
 
-with col_input:
-    urls_input = st.text_area(
-        "Meeting URLs",
-        placeholder=(
-            "https://www.racingandsports.com.au/form-guide/thoroughbred/hong-kong/sha-tin/2026-03-22\n"
-            "https://www.racingandsports.com.au/form-guide/thoroughbred/australia/randwick/2026-03-22"
-        ),
-        height=120,
-        key="urls_input",
-        label_visibility="collapsed",
-    )
-
-with col_example:
-    st.markdown("**How it works**")
-    st.markdown(
-        "- Launch Chrome with the command below\n"
-        "- Paste meeting URLs and click Generate\n"
-        "- App connects to your real Chrome\n"
-        "- **NAP** = biggest points gap\n"
-        "- **NB** = second biggest gap\n"
-        "- Gap < 4 pts → 2nd rated horse selected"
-    )
-    with st.expander("Step 1 — Launch Chrome with remote debugging"):
+with col_left:
+    with st.expander("Step 1 — Launch Chrome with remote debugging", expanded=False):
         if sys.platform == "win32":
             st.markdown("Click the button below to launch Chrome with remote debugging:")
             if st.button("🚀 Launch Chrome"):
@@ -135,9 +121,8 @@ with col_example:
                     ],
                     close_fds=True,
                 )
-                st.success("Chrome launched! Visit racingandsports.com.au, pass the Cloudflare check, then click Generate Tips.")
+                st.success("Chrome launched! If racingandsports.com.au shows a security check, complete it — then click Generate Tips.")
         else:
-            st.markdown("**Run this app locally on Windows** to use the Launch Chrome button.")
             st.markdown("On your Windows machine, run this command manually:")
             st.code(
                 r'"C:\Program Files\Google\Chrome\Application\chrome.exe" --remote-debugging-port=9222 --user-data-dir="C:\ChromeDebug"',
@@ -148,6 +133,16 @@ with col_example:
             "and pass the Cloudflare check once. Then come back here and click **Generate Tips**."
         )
 
+with col_right:
+    st.markdown("**Countries monitored**")
+    st.markdown(
+        "🇿🇦 South Africa &nbsp;·&nbsp; 🇮🇪 Ireland\n\n"
+        "🇲🇾 Malaysia &nbsp;·&nbsp; 🇭🇰 Hong Kong\n\n"
+        "🇲🇺 Mauritius &nbsp;·&nbsp; 🇫🇷 France\n\n"
+        "🇯🇵 Japan &nbsp;·&nbsp; 🇦🇪 UAE &nbsp;·&nbsp; 🇸🇬 Singapore"
+    )
+    st.caption("All thoroughbred meetings for these countries are scraped automatically.")
+
 run_btn = st.button("▶  Generate Tips", type="primary")
 
 # ---------------------------------------------------------------------------
@@ -155,38 +150,55 @@ run_btn = st.button("▶  Generate Tips", type="primary")
 # ---------------------------------------------------------------------------
 
 if run_btn:
-    urls = [u.strip() for u in (urls_input or "").splitlines() if u.strip()]
-    if not urls:
-        st.warning("Please enter at least one meeting URL.")
-    else:
-        st.session_state.pop("meeting_results", None)
-        all_results = {}
+    st.session_state.pop("meeting_results", None)
+    all_results = {}
+    _ok = True
 
-        with st.status("Connecting to Chrome...", expanded=True) as status:
-            try:
-                with sync_playwright() as p:
-                    try:
-                        # Connect to the user's real Chrome (launched with --remote-debugging-port=9222)
-                        browser = p.chromium.connect_over_cdp("http://localhost:9222")
-                        context = browser.contexts[0] if browser.contexts else browser.new_context()
-                        st.write("Connected to Chrome.")
-                    except Exception as e:
-                        status.update(
-                            label="Could not connect to Chrome. Did you launch it with --remote-debugging-port=9222?",
-                            state="error",
-                        )
-                        st.error(
-                            "Chrome not found on port 9222. "
-                            "Please close Chrome and relaunch it using the command in 'Step 1' above."
-                        )
-                        st.stop()
+    with st.status("Connecting to Chrome...", expanded=True) as status:
+        try:
+            with sync_playwright() as p:
 
-                    for url in urls:
-                        track_preview = scraper.extract_track_name(url)
-                        st.write(f"**{track_preview}** — loading overview...")
+                # ── Connect to Chrome ────────────────────────────────────────
+                try:
+                    browser = p.chromium.connect_over_cdp("http://localhost:9222")
+                    context = browser.contexts[0] if browser.contexts else browser.new_context()
+                    st.write("✅ Connected to Chrome.")
+                except Exception as e:
+                    status.update(label="Could not connect to Chrome.", state="error")
+                    st.error(
+                        "**Chrome not found on port 9222.**\n\n"
+                        "Please use the **Launch Chrome** button in Step 1 above, "
+                        "then visit racingandsports.com.au and pass the security check "
+                        "before clicking Generate Tips.\n\n"
+                        f"Detail: {e}"
+                    )
+                    _ok = False
+
+                # ── Find today's meetings ────────────────────────────────────
+                if _ok:
+                    status.update(label="Finding today's meetings...")
+                    meetings = scraper.get_todays_race_urls(
+                        context,
+                        log_fn=lambda msg: st.write(msg),
+                    )
+                    if not meetings:
+                        status.update(label="No meetings found for your countries today.", state="error")
+                        st.warning(
+                            "No thoroughbred meetings found today for: "
+                            "South Africa, Ireland, Malaysia, Hong Kong, Mauritius, "
+                            "France, Japan, UAE, Singapore."
+                        )
+                        _ok = False
+
+                # ── Scrape each meeting ──────────────────────────────────────
+                if _ok:
+                    status.update(label=f"Scraping {len(meetings)} meeting(s)...")
+                    for track_preview, race_urls in meetings:
+                        st.write(f"**{track_preview}** — scraping {len(race_urls)} races...")
                         try:
-                            track, results, nap, nb = scraper.scrape_meeting_with_page(
-                                url,
+                            track, results, nap, nb = scraper.scrape_races_from_urls(
+                                track_preview,
+                                race_urls,
                                 context,
                                 log_fn=lambda msg: st.write(f"&nbsp;&nbsp;&nbsp;{msg}"),
                             )
@@ -195,11 +207,13 @@ if run_btn:
                         except Exception as e:
                             st.write(f"**{track_preview}** — error: {e}")
 
+            if _ok:
                 status.update(label="Done!", state="complete", expanded=False)
                 st.session_state["meeting_results"] = all_results
 
-            except Exception as e:
-                status.update(label=f"Error: {e}", state="error")
+        except Exception as e:
+            status.update(label=f"Error: {e}", state="error")
+            st.error(str(e))
 
 # ---------------------------------------------------------------------------
 # Results display
@@ -256,4 +270,17 @@ if st.session_state.get("meeting_results"):
     # Copy-paste output
     st.divider()
     st.markdown("**Copy-paste version**")
-    st.code("\n".join(all_text_lines).strip(), language=None)
+    output_text = "\n".join(all_text_lines).strip()
+    st.code(output_text, language=None)
+
+    # Auto-save to a dated text file in the repo folder
+    today = datetime.date.today().strftime("%Y-%m-%d")
+    save_path = os.path.join(os.path.dirname(__file__), f"tips_{today}.txt")
+    try:
+        with open(save_path, "w", encoding="utf-8") as f:
+            f.write(f"RAS Tips — {today}\n")
+            f.write("=" * 40 + "\n\n")
+            f.write(output_text)
+        st.success(f"Tips saved to: tips_{today}.txt")
+    except Exception as e:
+        st.warning(f"Could not save tips file: {e}")
