@@ -277,7 +277,8 @@ if run_btn:
 if st.session_state.get("meeting_results"):
     st.divider()
 
-    all_text_lines = []
+    wordpress_lines = []   # clean — for copy-pasting into WordPress
+    file_lines      = []   # with (NAP)/(NB) — for the saved text file & email
 
     for track, (results, nap, nb) in st.session_state["meeting_results"].items():
         st.markdown(f'<div class="meeting-header">🏟 {track}</div>', unsafe_allow_html=True)
@@ -289,7 +290,8 @@ if st.session_state.get("meeting_results"):
         h3.markdown("<span style='color:#aaa;font-size:0.8em'>GAP</span>", unsafe_allow_html=True)
         h4.markdown("<span style='color:#aaa;font-size:0.8em'>TIP</span>", unsafe_allow_html=True)
 
-        all_text_lines.append(track)
+        wordpress_lines.append(track)
+        file_lines.append(track)
 
         for r, selected, gap in results:
             c1, c2, c3, c4 = st.columns([1, 5, 2, 2])
@@ -313,28 +315,33 @@ if st.session_state.get("meeting_results"):
                 elif r == nb:
                     c4.markdown('<span class="nb-badge">NB</span>', unsafe_allow_html=True)
 
-                all_text_lines.append(f"R{r} {selected['name']}")
+                suffix = " (NAP)" if r == nap else " (NB)" if r == nb else ""
+                wordpress_lines.append(f"R{r} {selected['name']}")
+                file_lines.append(f"R{r} {selected['name']}{suffix}")
             else:
                 c2.markdown('<span style="color:#ccc">—</span>', unsafe_allow_html=True)
-                all_text_lines.append(f"R{r} -")
+                wordpress_lines.append(f"R{r} -")
+                file_lines.append(f"R{r} -")
 
-        all_text_lines.append("")
+        wordpress_lines.append("")
+        file_lines.append("")
         st.markdown("<br>", unsafe_allow_html=True)
 
-    # Copy-paste output
+    # Copy-paste output (clean, for WordPress)
     st.divider()
     st.markdown("**Copy-paste version**")
-    output_text = "\n".join(all_text_lines).strip()
+    output_text = "\n".join(wordpress_lines).strip()
     st.code(output_text, language=None)
 
-    # Auto-save to a dated text file in the repo folder
+    # Auto-save to a dated text file (with NAP/NB labels)
     today = datetime.date.today().strftime("%Y-%m-%d")
+    file_text = "\n".join(file_lines).strip()
     save_path = os.path.join(os.path.dirname(__file__), f"tips_{today}.txt")
     try:
         with open(save_path, "w", encoding="utf-8") as f:
             f.write(f"RAS Tips — {today}\n")
             f.write("=" * 40 + "\n\n")
-            f.write(output_text)
+            f.write(file_text)
         st.success(f"Tips saved to: tips_{today}.txt")
     except Exception as e:
         st.warning(f"Could not save tips file: {e}")
@@ -346,9 +353,9 @@ if st.session_state.get("meeting_results"):
         email_to     = st.secrets.get("EMAIL_TO", "")
 
         if app_password and app_password != "your-app-password-here" and email_from and email_to:
-            # Build HTML email body
+            # Build HTML email body (using file_text which includes NAP/NB labels)
             html_lines = []
-            for line in output_text.splitlines():
+            for line in file_text.splitlines():
                 if not line.strip():
                     html_lines.append("<br>")
                 elif "(NAP)" in line:
@@ -376,7 +383,7 @@ if st.session_state.get("meeting_results"):
             msg["Subject"] = f"🏇 RAS Tips — {today}"
             msg["From"]    = email_from
             msg["To"]      = email_to
-            msg.attach(MIMEText(output_text, "plain"))
+            msg.attach(MIMEText(file_text, "plain"))
             msg.attach(MIMEText(html_body, "html"))
 
             with smtplib.SMTP("smtp.gmail.com", 587) as server:
