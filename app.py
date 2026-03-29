@@ -313,8 +313,7 @@ if st.session_state.get("meeting_results"):
                 elif r == nb:
                     c4.markdown('<span class="nb-badge">NB</span>', unsafe_allow_html=True)
 
-                suffix = " (NAP)" if r == nap else " (NB)" if r == nb else ""
-                all_text_lines.append(f"R{r} {selected['name']}{suffix}")
+                all_text_lines.append(f"R{r} {selected['name']}")
             else:
                 c2.markdown('<span style="color:#ccc">—</span>', unsafe_allow_html=True)
                 all_text_lines.append(f"R{r} -")
