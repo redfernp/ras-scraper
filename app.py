@@ -353,38 +353,14 @@ if st.session_state.get("meeting_results"):
         email_to     = st.secrets.get("EMAIL_TO", "")
 
         if app_password and app_password != "your-app-password-here" and email_from and email_to:
-            # Build HTML email body (using file_text which includes NAP/NB labels)
-            html_lines = []
-            for line in file_text.splitlines():
-                if not line.strip():
-                    html_lines.append("<br>")
-                elif "(NAP)" in line:
-                    html_lines.append(f'<p><b>{line}</b> &nbsp;<span style="background:#FFD700;padding:2px 8px;border-radius:10px;font-size:0.85em;font-weight:700;">NAP</span></p>')
-                elif "(NB)" in line:
-                    html_lines.append(f'<p><b>{line}</b> &nbsp;<span style="background:#A8A8A8;color:#fff;padding:2px 8px;border-radius:10px;font-size:0.85em;font-weight:700;">NB</span></p>')
-                elif line[0].isalpha() and line == line.upper():
-                    html_lines.append(f'<h3 style="margin-top:18px;margin-bottom:4px;">{line}</h3>')
-                else:
-                    html_lines.append(f'<p style="margin:2px 0;">{line}</p>')
-
-            html_body = f"""
-            <div style="font-family:Arial,sans-serif;max-width:520px;">
-              <h2 style="background:#1a1a2e;color:#fff;padding:16px 20px;border-radius:8px;">
-                🏇 RAS Tips — {today}
-              </h2>
-              {''.join(html_lines)}
-              <p style="color:#aaa;font-size:0.8em;margin-top:24px;">
-                Sent automatically by RAS Tips Generator
-              </p>
-            </div>
-            """
+            # Email body matches the text file exactly
+            email_body = f"RAS Tips — {today}\n{'=' * 40}\n\n{file_text}"
 
             msg = MIMEMultipart("alternative")
-            msg["Subject"] = f"🏇 RAS Tips — {today}"
+            msg["Subject"] = f"RAS Tips — {today}"
             msg["From"]    = email_from
             msg["To"]      = email_to
-            msg.attach(MIMEText(file_text, "plain"))
-            msg.attach(MIMEText(html_body, "html"))
+            msg.attach(MIMEText(email_body, "plain"))
 
             with smtplib.SMTP("smtp.gmail.com", 587) as server:
                 server.starttls()
