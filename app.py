@@ -1,8 +1,11 @@
 import asyncio
 import datetime
 import os
+import smtplib
 import subprocess
 import sys
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
 # Fix for Windows: Streamlit switches asyncio to SelectorEventLoop which breaks
 # Playwright's subprocess. Force ProactorEventLoop before anything else.
@@ -336,3 +339,52 @@ if st.session_state.get("meeting_results"):
         st.success(f"Tips saved to: tips_{today}.txt")
     except Exception as e:
         st.warning(f"Could not save tips file: {e}")
+
+    # Auto-email the tips
+    try:
+        app_password = st.secrets.get("GMAIL_APP_PASSWORD", "")
+        email_from   = st.secrets.get("EMAIL_FROM", "")
+        email_to     = st.secrets.get("EMAIL_TO", "")
+
+        if app_password and app_password != "your-app-password-here" and email_from and email_to:
+            # Build HTML email body
+            html_lines = []
+            for line in output_text.splitlines():
+                if not line.strip():
+                    html_lines.append("<br>")
+                elif "(NAP)" in line:
+                    html_lines.append(f'<p><b>{line}</b> &nbsp;<span style="background:#FFD700;padding:2px 8px;border-radius:10px;font-size:0.85em;font-weight:700;">NAP</span></p>')
+                elif "(NB)" in line:
+                    html_lines.append(f'<p><b>{line}</b> &nbsp;<span style="background:#A8A8A8;color:#fff;padding:2px 8px;border-radius:10px;font-size:0.85em;font-weight:700;">NB</span></p>')
+                elif line[0].isalpha() and line == line.upper():
+                    html_lines.append(f'<h3 style="margin-top:18px;margin-bottom:4px;">{line}</h3>')
+                else:
+                    html_lines.append(f'<p style="margin:2px 0;">{line}</p>')
+
+            html_body = f"""
+            <div style="font-family:Arial,sans-serif;max-width:520px;">
+              <h2 style="background:#1a1a2e;color:#fff;padding:16px 20px;border-radius:8px;">
+                🏇 RAS Tips — {today}
+              </h2>
+              {''.join(html_lines)}
+              <p style="color:#aaa;font-size:0.8em;margin-top:24px;">
+                Sent automatically by RAS Tips Generator
+              </p>
+            </div>
+            """
+
+            msg = MIMEMultipart("alternative")
+            msg["Subject"] = f"🏇 RAS Tips — {today}"
+            msg["From"]    = email_from
+            msg["To"]      = email_to
+            msg.attach(MIMEText(output_text, "plain"))
+            msg.attach(MIMEText(html_body, "html"))
+
+            with smtplib.SMTP("smtp.gmail.com", 587) as server:
+                server.starttls()
+                server.login(email_from, app_password)
+                server.sendmail(email_from, email_to.split(","), msg.as_string())
+
+            st.success(f"Tips emailed to {email_to} ✉️")
+    except Exception as e:
+        st.warning(f"Could not send email: {e}")
