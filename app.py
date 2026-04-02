@@ -305,7 +305,8 @@ if st.session_state.get("meeting_results"):
     st.divider()
 
     wordpress_lines = []   # clean — for copy-pasting into WordPress
-    file_lines      = []   # with (NAP)/(NB) — for the saved text file & email
+    file_lines      = []   # with (NAP)/(NB) — for the saved text file
+    email_lines     = []   # HTML bold — for the email
 
     for track, (results, nap, nb) in st.session_state["meeting_results"].items():
         st.markdown(f'<div class="meeting-header">🏟 {track}</div>', unsafe_allow_html=True)
@@ -319,6 +320,7 @@ if st.session_state.get("meeting_results"):
 
         wordpress_lines.append(f"**{track}**")
         file_lines.append(f"**{track}**")
+        email_lines.append(f"<b>{track}</b>")
 
         for r, selected, gap in results:
             c1, c2, c3, c4 = st.columns([1, 5, 2, 2])
@@ -346,16 +348,20 @@ if st.session_state.get("meeting_results"):
                 if r == nap or r == nb:
                     wordpress_lines.append(f"**R{r} {selected['name']}**")
                     file_lines.append(f"**R{r} {selected['name']}{suffix}**")
+                    email_lines.append(f"<b>R{r} {selected['name']}{suffix}</b>")
                 else:
                     wordpress_lines.append(f"R{r} {selected['name']}")
                     file_lines.append(f"R{r} {selected['name']}{suffix}")
+                    email_lines.append(f"R{r} {selected['name']}{suffix}")
             else:
                 c2.markdown('<span style="color:#ccc">—</span>', unsafe_allow_html=True)
                 wordpress_lines.append(f"R{r} -")
                 file_lines.append(f"R{r} -")
+                email_lines.append(f"R{r} -")
 
         wordpress_lines.append("")
         file_lines.append("")
+        email_lines.append("")
         st.markdown("<br>", unsafe_allow_html=True)
 
     # Copy-paste output (clean, for WordPress)
@@ -384,14 +390,15 @@ if st.session_state.get("meeting_results"):
         email_to     = st.secrets.get("EMAIL_TO", "")
 
         if app_password and app_password != "your-app-password-here" and email_from and email_to:
-            # Email body matches the text file exactly
-            email_body = f"RAS Tips — {today}\n{'=' * 40}\n\n{file_text}"
+            email_text = "\n".join(email_lines).strip()
+            email_html = f"<html><body><h3>RAS Tips — {today}</h3>{'<br>'.join(email_lines).strip()}</body></html>"
 
             msg = MIMEMultipart("alternative")
             msg["Subject"] = f"RAS Tips — {today}"
             msg["From"]    = email_from
             msg["To"]      = email_to
-            msg.attach(MIMEText(email_body, "plain"))
+            msg.attach(MIMEText(email_text, "plain"))
+            msg.attach(MIMEText(email_html, "html"))
 
             with smtplib.SMTP("smtp.gmail.com", 587) as server:
                 server.starttls()
