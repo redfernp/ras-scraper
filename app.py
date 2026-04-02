@@ -154,15 +154,39 @@ st.divider()
 
 mode = st.radio(
     "Select mode",
-    options=["Today's Tips", "Add Racecard URLs"],
+    options=["Today's Tips", "Select Countries", "Add Racecard URLs"],
     horizontal=True,
-    help="Today's Tips auto-discovers today's meetings. Add Racecard URLs lets you paste meeting links for a future date.",
+    help="Today's Tips scrapes all countries. Select Countries lets you pick which ones. Add Racecard URLs lets you paste meeting links for a future date.",
 )
 
+COUNTRY_OPTIONS = {
+    "South Africa": "south-africa",
+    "Ireland": "ireland",
+    "Malaysia": "malaysia",
+    "Hong Kong": "hong-kong",
+    "Mauritius": "mauritius",
+    "France": "france",
+    "Japan": "japan",
+    "UAE": "united-arab-emirates",
+    "Singapore": "singapore",
+}
+
+selected_countries = []
 manual_urls = []
-if mode == "Add Racecard URLs":
+
+if mode == "Select Countries":
+    st.markdown("Choose one or more countries to scrape today's meetings from:")
+    chosen = st.multiselect(
+        "Countries",
+        options=list(COUNTRY_OPTIONS.keys()),
+        default=list(COUNTRY_OPTIONS.keys()),
+        label_visibility="collapsed",
+    )
+    selected_countries = [COUNTRY_OPTIONS[c] for c in chosen]
+
+elif mode == "Add Racecard URLs":
     st.markdown(
-        "Paste race meeting URLs below — one per line. "
+        "Paste race meeting URLs below, one per line. "
         "Use this to generate tips for a future date (e.g. Sunday's card on a Friday)."
     )
     urls_input = st.text_area(
@@ -209,20 +233,23 @@ if run_btn:
 
                 # ── Find meetings (auto or manual) ───────────────────────────
                 if _ok:
-                    if mode == "Today's Tips":
-                        status.update(label="Finding today's meetings...")
-                        meetings = scraper.get_todays_race_urls(
-                            context,
-                            log_fn=lambda msg: st.write(msg),
-                        )
-                        if not meetings:
-                            status.update(label="No meetings found for your countries today.", state="error")
-                            st.warning(
-                                "No thoroughbred meetings found today for: "
-                                "South Africa, Ireland, Malaysia, Hong Kong, Mauritius, "
-                                "France, Japan, UAE, Singapore."
-                            )
+                    if mode in ("Today's Tips", "Select Countries"):
+                        if mode == "Select Countries" and not selected_countries:
+                            status.update(label="No countries selected.", state="error")
+                            st.error("Please select at least one country.")
                             _ok = False
+                        else:
+                            status.update(label="Finding today's meetings...")
+                            countries_arg = selected_countries if mode == "Select Countries" else None
+                            meetings = scraper.get_todays_race_urls(
+                                context,
+                                log_fn=lambda msg: st.write(msg),
+                                countries=countries_arg,
+                            )
+                            if not meetings:
+                                status.update(label="No meetings found for your countries today.", state="error")
+                                st.warning("No thoroughbred meetings found today for the selected countries.")
+                                _ok = False
                     else:
                         # Manual URL mode — validate input then build meeting list
                         if not manual_urls:
@@ -242,7 +269,7 @@ if run_btn:
                     for track_preview, race_urls in meetings:
                         st.write(f"**{track_preview}** — scraping...")
                         try:
-                            if mode == "Today's Tips":
+                            if mode in ("Today's Tips", "Select Countries"):
                                 # Race URLs already known — scrape directly
                                 track, results, nap, nb = scraper.scrape_races_from_urls(
                                     track_preview,
@@ -290,8 +317,8 @@ if st.session_state.get("meeting_results"):
         h3.markdown("<span style='color:#aaa;font-size:0.8em'>GAP</span>", unsafe_allow_html=True)
         h4.markdown("<span style='color:#aaa;font-size:0.8em'>TIP</span>", unsafe_allow_html=True)
 
-        wordpress_lines.append(track)
-        file_lines.append(track)
+        wordpress_lines.append(f"**{track}**")
+        file_lines.append(f"**{track}**")
 
         for r, selected, gap in results:
             c1, c2, c3, c4 = st.columns([1, 5, 2, 2])
@@ -316,8 +343,12 @@ if st.session_state.get("meeting_results"):
                     c4.markdown('<span class="nb-badge">NB</span>', unsafe_allow_html=True)
 
                 suffix = " (NAP)" if r == nap else " (NB)" if r == nb else ""
-                wordpress_lines.append(f"R{r} {selected['name']}")
-                file_lines.append(f"R{r} {selected['name']}{suffix}")
+                if r == nap or r == nb:
+                    wordpress_lines.append(f"**R{r} {selected['name']}**")
+                    file_lines.append(f"**R{r} {selected['name']}{suffix}**")
+                else:
+                    wordpress_lines.append(f"R{r} {selected['name']}")
+                    file_lines.append(f"R{r} {selected['name']}{suffix}")
             else:
                 c2.markdown('<span style="color:#ccc">—</span>', unsafe_allow_html=True)
                 wordpress_lines.append(f"R{r} -")

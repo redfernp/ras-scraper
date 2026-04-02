@@ -269,16 +269,18 @@ _RACE_PATH_RE = re.compile(
 )
 
 
-def get_todays_race_urls(context, log_fn=None) -> list[tuple]:
+def get_todays_race_urls(context, log_fn=None, countries=None) -> list[tuple]:
     """
-    Navigate to /form-guide, extract all individual race URLs for TARGET_COUNTRIES
+    Navigate to /form-guide, extract all individual race URLs for target countries
     directly from the overview page (no per-meeting navigation needed).
+    If countries is provided, only those country slugs are included.
     Returns list of (track_name, [race_url, ...]) sorted by race number.
     """
     def log(msg):
         if log_fn:
             log_fn(msg)
 
+    allowed = countries if countries else TARGET_COUNTRIES
     base = "https://www.racingandsports.com.au"
     page = create_page(context)
     meetings = {}  # meeting_url -> {track, races: {race_num: race_url}}
@@ -306,7 +308,7 @@ def get_todays_race_urls(context, log_fn=None) -> list[tuple]:
             if not m:
                 continue
             country_slug = m.group(1)
-            if country_slug not in TARGET_COUNTRIES:
+            if country_slug not in allowed:
                 continue
 
             track_slug  = m.group(2)
